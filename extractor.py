@@ -87,7 +87,7 @@ def extract_fields(transcript: str) -> dict:
     """Extract structured fields from a Hebrew search & rescue transcript."""
     prompt = f"{SYSTEM_PROMPT}\n\nתמלול:\n{transcript}"
     response = _client.models.generate_content(
-        model="gemini-1.5-flash",
+        model="gemini-2.0-flash",
         contents=prompt,
         config=genai.types.GenerateContentConfig(
             temperature=0,

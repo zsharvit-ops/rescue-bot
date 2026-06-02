@@ -51,7 +51,7 @@ def transcribe_audio(media_url: str) -> str:
             config=genai.types.UploadFileConfig(mime_type=mime_type),
         )
         result = _client.models.generate_content(
-            model="gemini-1.5-flash",
+            model="gemini-2.0-flash",
             contents=[
                 audio_file,
                 "תמלל את ההקלטה הזו לעברית. החזר רק את הטקסט המתומלל, ללא הסברים.",
