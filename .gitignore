@@ -1,0 +1,8 @@
+.env
+__pycache__/
+*.pyc
+*.pyo
+static/output/
+ngrok.exe
+ngrok.zip
+*.docx
