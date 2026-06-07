@@ -33,7 +33,7 @@ def _force_rtl_in_zip(docx_path: str):
                     def add_bidi(m):
                         inner = m.group(0)
                         if "w:bidi" not in inner:
-                            inner = inner.replace("</w:pPr>", "<w:bidi/><w:jc w:val=\"right\"/></w:pPr>")
+                            inner = inner.replace("</w:pPr>", '<w:bidi/><w:jc w:val="right"/></w:pPr>')
                         return inner
                     xml = re.sub(r"<w:pPr>.*?</w:pPr>", add_bidi, xml, flags=re.DOTALL)
                     # Add <w:rtl/> inside <w:rPr> only if not already there
@@ -43,6 +43,13 @@ def _force_rtl_in_zip(docx_path: str):
                             inner = inner.replace("</w:rPr>", "<w:rtl/></w:rPr>")
                         return inner
                     xml = re.sub(r"<w:rPr>.*?</w:rPr>", add_rtl, xml, flags=re.DOTALL)
+                    # Add <w:bidi/> to section properties <w:sectPr>
+                    def add_bidi_sect(m):
+                        inner = m.group(0)
+                        if "w:bidi" not in inner:
+                            inner = inner.replace("</w:sectPr>", "<w:bidi/></w:sectPr>")
+                        return inner
+                    xml = re.sub(r"<w:sectPr\b.*?</w:sectPr>", add_bidi_sect, xml, flags=re.DOTALL)
                     data = xml.encode("utf-8")
                 elif item.filename == "word/settings.xml":
                     xml = data.decode("utf-8")
@@ -51,6 +58,23 @@ def _force_rtl_in_zip(docx_path: str):
                     data = xml.encode("utf-8")
                 elif item.filename == "word/styles.xml":
                     xml = data.decode("utf-8")
+                    # Inject RTL into docDefaults (document-level default)
+                    if "<w:docDefaults>" in xml:
+                        if "<w:pPrDefault>" in xml:
+                            if "<w:pPr>" in xml.split("<w:pPrDefault>")[1].split("</w:pPrDefault>")[0]:
+                                # pPr exists inside pPrDefault — add bidi to it
+                                def add_bidi_default(m):
+                                    inner = m.group(0)
+                                    if "w:bidi" not in inner:
+                                        inner = inner.replace("</w:pPr>", '<w:bidi/><w:jc w:val="right"/></w:pPr>')
+                                    return inner
+                                xml = re.sub(r"(<w:pPrDefault>.*?<w:pPr>.*?</w:pPr>.*?</w:pPrDefault>)",
+                                             add_bidi_default, xml, flags=re.DOTALL)
+                            else:
+                                xml = xml.replace("<w:pPrDefault>", '<w:pPrDefault><w:pPr><w:bidi/><w:jc w:val="right"/></w:pPr>')
+                        else:
+                            xml = xml.replace("</w:docDefaults>",
+                                '<w:pPrDefault><w:pPr><w:bidi/><w:jc w:val="right"/></w:pPr></w:pPrDefault></w:docDefaults>')
                     # Force RTL on every <w:pPr> block inside styles too
                     def add_bidi_style(m):
                         inner = m.group(0)
@@ -58,11 +82,11 @@ def _force_rtl_in_zip(docx_path: str):
                             inner = inner.replace("</w:pPr>", '<w:bidi/><w:jc w:val="right"/></w:pPr>')
                         return inner
                     xml = re.sub(r"<w:pPr>.*?</w:pPr>", add_bidi_style, xml, flags=re.DOTALL)
-                    # Also add RTL lang to every <w:rPr> in styles
+                    # Also add RTL to every <w:rPr> in styles
                     def add_rtl_style(m):
                         inner = m.group(0)
                         if "w:rtl" not in inner:
-                            inner = inner.replace("</w:rPr>", '<w:rtl/><w:cs/></w:rPr>')
+                            inner = inner.replace("</w:rPr>", '<w:rtl/></w:rPr>')
                         return inner
                     xml = re.sub(r"<w:rPr>.*?</w:rPr>", add_rtl_style, xml, flags=re.DOTALL)
                     data = xml.encode("utf-8")
@@ -124,7 +148,8 @@ def _add_heading(doc, text, level=1):
 
 
 def generate_doc(fields: dict, transcript: str, summary: dict = None) -> str:
-    doc = Document()
+    _template = os.path.join(os.path.dirname(__file__), "template_rtl.docx")
+    doc = Document(_template) if os.path.exists(_template) else Document()
     doc.sections[0].page_width = Cm(21)
     doc.sections[0].page_height = Cm(29.7)
 
