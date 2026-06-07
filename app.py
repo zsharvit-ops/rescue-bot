@@ -35,6 +35,7 @@ def webhook():
     incoming_msg = request.form.get("Body", "").strip()
     from_number = request.form.get("From", "")
     num_media = int(request.form.get("NumMedia", 0))
+    print(f"[webhook] from={from_number} num_media={num_media} body={incoming_msg[:50]!r}", flush=True)
 
     resp = MessagingResponse()
     msg = resp.message()
