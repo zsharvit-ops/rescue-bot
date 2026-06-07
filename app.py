@@ -133,11 +133,11 @@ def _process_and_reply(from_number: str, transcript: str):
         print("[_process_and_reply] DONE", flush=True)
     except Exception as e:
         print(f"[_process_and_reply] ERROR: {e}", flush=True)
-        client.messages.create(
-            from_=TWILIO_WHATSAPP_NUMBER,
-            to=from_number,
-            body=f"❌ שגיאה בעיבוד התמלול:\n{e}",
-        )
+        err_msg = f"\u274c שגיאה בעיבוד:\n{str(e)[:200]}"
+        try:
+            client.messages.create(from_=TWILIO_WHATSAPP_NUMBER, to=from_number, body=err_msg)
+        except Exception:
+            pass
 
 
 def _transcribe_and_reply(media_url: str, from_number: str):
@@ -150,11 +150,11 @@ def _transcribe_and_reply(media_url: str, from_number: str):
         _process_and_reply(from_number, transcript)
     except Exception as e:
         print(f"[_transcribe_and_reply] ERROR: {e}", flush=True)
-        client.messages.create(
-            from_=TWILIO_WHATSAPP_NUMBER,
-            to=from_number,
-            body=f"❌ שגיאה בתמלול ההקלטה:\n{e}",
-        )
+        err_msg = f"\u274c שגיאה בתמלול ההקלטה:\n{str(e)[:200]}"
+        try:
+            client.messages.create(from_=TWILIO_WHATSAPP_NUMBER, to=from_number, body=err_msg)
+        except Exception:
+            pass
 
 
 def _process_transcript_and_reply(from_number: str, transcript: str):
