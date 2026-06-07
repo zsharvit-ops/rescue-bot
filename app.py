@@ -95,6 +95,7 @@ def webhook():
 def _process_transcript_and_reply(from_number: str, transcript: str):
     """Used after audio transcription — sends result directly via Twilio client."""
     client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+    print(f"DEBUG from_={TWILIO_WHATSAPP_NUMBER!r} to={from_number!r}", flush=True)
     try:
         fields = extract_fields(transcript)
         doc_path = generate_doc(fields, transcript)
@@ -105,7 +106,7 @@ def _process_transcript_and_reply(from_number: str, transcript: str):
         dest = os.path.join("static", "output", file_name)
         shutil.copy(doc_path, dest)
 
-        host = os.environ.get("PUBLIC_URL", "http://localhost:5000")
+        host = os.environ.get("PUBLIC_URL", "http://localhost:5000").rstrip("/")
         doc_url = f"{host}/static/output/{file_name}"
 
         client.messages.create(
@@ -136,13 +137,14 @@ def _process_transcript(from_number: str, msg):
         doc_path = generate_doc(fields, transcript)
 
         client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+        print(f"DEBUG from_={TWILIO_WHATSAPP_NUMBER!r} to={from_number!r}", flush=True)
         file_name = os.path.basename(doc_path)
         os.makedirs("static/output", exist_ok=True)
         import shutil
         dest = os.path.join("static", "output", file_name)
         shutil.copy(doc_path, dest)
 
-        host = os.environ.get("PUBLIC_URL", "http://localhost:5000")
+        host = os.environ.get("PUBLIC_URL", "http://localhost:5000").rstrip("/")
         doc_url = f"{host}/static/output/{file_name}"
 
         client.messages.create(
