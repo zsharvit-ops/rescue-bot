@@ -123,3 +123,27 @@ def generate_summary(transcript: str) -> dict:
         return json.loads(raw)
     except Exception:
         return {}
+
+
+def format_transcript_with_speakers(transcript: str) -> str:
+    """Use LLM to identify speakers and format transcript as 'Name: text' lines."""
+    prompt = """אתה עורך תמלול מקצועי. קרא את השיחה הבאה וחלק אותה לפי דוברים.
+
+חוקים:
+1. זהה כמה דוברים יש (בדרך כלל 2: שואל ומשיב).
+2. אם שמות נזכרים בתמלול — השתמש בשמות האמיתיים.
+3. אם אין שמות — השתמש ב: 'קצין חילוץ' ו-'מדווח' (או שמות אחרים הגיוניים לפי הקשר).
+4. פרמט: שם_הדובר: הטקסט שאמר
+5. כל שינוי דובר — שורה חדשה.
+6. החזר את התמלול המעוצב בלבד, ללא הסברים.
+7. שמור על כל המידע — אל תשמיט שום דבר.
+
+תמלול:
+""" + transcript
+    response = _client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0,
+    )
+    result = response.choices[0].message.content.strip()
+    return result if result else transcript

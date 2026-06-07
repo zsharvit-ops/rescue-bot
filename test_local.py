@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from extractor import extract_fields, generate_summary
+from extractor import extract_fields, generate_summary, format_transcript_with_speakers
 from doc_generator import generate_doc
 
 def main():
@@ -38,13 +38,16 @@ def main():
         if v:
             print(f"  {k}: {v}")
 
+    print("\n💬 מעצב תמלול לפי דוברים...")
+    formatted_transcript = format_transcript_with_speakers(transcript)
+
     print("\n📄 מייצר מסמך Word...")
-    path = generate_doc(fields, transcript, summary=summary)
-    print(f"✅ המסמך נשמר: {path}")
+    doc_path = generate_doc(fields, formatted_transcript, summary=summary)
+    print(f"✅ המסמך נשמר: {doc_path}")
 
     # Try to open automatically
     if sys.platform == "win32":
-        os.startfile(path)
+        os.startfile(doc_path)
 
 if __name__ == "__main__":
     main()
