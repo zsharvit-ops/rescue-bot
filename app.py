@@ -102,9 +102,12 @@ def webhook():
 
 def _process_and_reply(from_number: str, transcript: str):
     """Background thread: extract fields, generate doc, send via Twilio client."""
+    print(f"[_process_and_reply] START for {from_number}", flush=True)
     client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
     try:
+        print("[_process_and_reply] extracting fields...", flush=True)
         fields = extract_fields(transcript)
+        print("[_process_and_reply] generating doc...", flush=True)
         doc_path = generate_doc(fields, transcript)
 
         os.makedirs("static/output", exist_ok=True)
@@ -115,6 +118,7 @@ def _process_and_reply(from_number: str, transcript: str):
 
         host = os.environ.get("PUBLIC_URL", "http://localhost:5000").rstrip("/")
         doc_url = f"{host}/static/output/{file_name}"
+        print(f"[_process_and_reply] sending doc_url={doc_url}", flush=True)
 
         client.messages.create(
             from_=TWILIO_WHATSAPP_NUMBER,
@@ -122,7 +126,9 @@ def _process_and_reply(from_number: str, transcript: str):
             media_url=[doc_url],
             body="📄 דוח תחקיר חילוץ מוכן:",
         )
+        print("[_process_and_reply] DONE", flush=True)
     except Exception as e:
+        print(f"[_process_and_reply] ERROR: {e}", flush=True)
         client.messages.create(
             from_=TWILIO_WHATSAPP_NUMBER,
             to=from_number,
@@ -132,11 +138,14 @@ def _process_and_reply(from_number: str, transcript: str):
 
 def _transcribe_and_reply(media_url: str, from_number: str):
     """Run in background thread: transcribe audio then send doc."""
+    print(f"[_transcribe_and_reply] START downloading {media_url}", flush=True)
     client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
     try:
         transcript = transcribe_audio(media_url)
-        _process_transcript_and_reply(from_number, transcript)
+        print(f"[_transcribe_and_reply] transcript={transcript[:80]}", flush=True)
+        _process_and_reply(from_number, transcript)
     except Exception as e:
+        print(f"[_transcribe_and_reply] ERROR: {e}", flush=True)
         client.messages.create(
             from_=TWILIO_WHATSAPP_NUMBER,
             to=from_number,
