@@ -124,8 +124,7 @@ def _process_and_reply(from_number: str, transcript: str):
         client.messages.create(
             from_=TWILIO_WHATSAPP_NUMBER,
             to=from_number,
-            media_url=[doc_url],
-            body="📄 דוח תחקיר חילוץ מוכן:",
+            body=f"📄 דוח תחקיר חילוץ מוכן!\nלחץ להורדה:\n{doc_url}",
         )
         print("[_process_and_reply] DONE", flush=True)
     except Exception as e:
@@ -174,8 +173,7 @@ def _process_transcript_and_reply(from_number: str, transcript: str):
         client.messages.create(
             from_=TWILIO_WHATSAPP_NUMBER,
             to=from_number,
-            media_url=[doc_url],
-            body="📄 דוח תחקיר חילוץ מוכן (הופק מהקלטה):",
+            body=f"📄 דוח תחקיר חילוץ מוכן (הופק מהקלטה)!\nלחץ להורדה:\n{doc_url}",
         )
     except Exception as e:
         client.messages.create(
@@ -212,8 +210,7 @@ def _process_transcript(from_number: str, msg):
         client.messages.create(
             from_=TWILIO_WHATSAPP_NUMBER,
             to=from_number,
-            media_url=[doc_url],
-            body="📄 דוח תחקיר חילוץ מוכן:",
+            body=f"📄 דוח תחקיר חילוץ מוכן!\nלחץ להורדה:\n{doc_url}",
         )
     except Exception as e:
         msg.body(f"❌ שגיאה בעיבוד התמלול:\n{e}")
