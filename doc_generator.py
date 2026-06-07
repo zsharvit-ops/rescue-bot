@@ -36,13 +36,34 @@ def _set_cell_bg(cell, hex_color: str):
     tcPr.append(shd)
 
 
+def _set_doc_rtl(doc: Document):
+    """Set document-level RTL for all default paragraph styles."""
+    from docx.oxml.ns import qn
+    from docx.oxml import OxmlElement
+    # Set body bidi
+    sectPr = doc.sections[0]._sectPr
+    bidi = OxmlElement("w:bidi")
+    # Set default paragraph style to RTL
+    styles = doc.styles
+    for style in styles:
+        try:
+            pPr = style.element.get_or_add_pPr()
+            b = OxmlElement("w:bidi")
+            pPr.append(b)
+            jc = OxmlElement("w:jc")
+            jc.set(qn("w:val"), "right")
+            pPr.append(jc)
+        except Exception:
+            pass
+
+
 def _add_heading(doc: Document, text: str, level: int = 1):
     p = doc.add_heading(text, level=level)
     _set_rtl(p)
     return p
 
 
-def generate_doc(fields: dict, transcript: str) -> str:
+def generate_doc(fields: dict, transcript: str, summary: dict = None) -> str:
     """
     Build and save the Word document.
     Returns the path to the saved .docx file.
@@ -52,6 +73,7 @@ def generate_doc(fields: dict, transcript: str) -> str:
     # ── Document-level RTL ──────────────────────────────────────────────────
     doc.sections[0].page_width = Cm(21)
     doc.sections[0].page_height = Cm(29.7)
+    _set_doc_rtl(doc)
 
     # ── Title ───────────────────────────────────────────────────────────────
     title = doc.add_paragraph()
@@ -66,6 +88,47 @@ def generate_doc(fields: dict, transcript: str) -> str:
     date_p.add_run(f"תאריך הפקה: {datetime.now().strftime('%d/%m/%Y %H:%M')}")
 
     doc.add_paragraph()
+
+    # ════════════════════════════════════════════════════════════════════════
+    # SUMMARY — quick situation overview
+    # ════════════════════════════════════════════════════════════════════════
+    if summary:
+        _add_heading(doc, "סיכום מצב — מידע קריטי", level=1)
+
+        sum_table = doc.add_table(rows=0, cols=2)
+        sum_table.style = "Table Grid"
+        sum_table.alignment = WD_TABLE_ALIGNMENT.RIGHT
+
+        summary_fields = [
+            ("תיאור המקרה", summary.get("case_summary", "")),
+            ("מיקום אחרון ידוע", summary.get("last_location", "")),
+            ("מצב רפואי", summary.get("medical_status", "")),
+            ("זמן מאז נעדר", summary.get("time_missing", "")),
+            ("תיאור אישי", summary.get("physical_description", "")),
+        ]
+        for label, value in summary_fields:
+            if value:
+                row_cells = sum_table.add_row().cells
+                row_cells[0].text = label
+                row_cells[1].text = str(value)
+                _set_cell_bg(row_cells[0], "1A5376")
+                for p in row_cells[0].paragraphs:
+                    _set_rtl(p)
+                    for r in p.runs:
+                        r.bold = True
+                        r.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+                        r.font.size = Pt(11)
+                _set_cell_bg(row_cells[1], "EBF5FB")
+                for p in row_cells[1].paragraphs:
+                    _set_rtl(p)
+                    for r in p.runs:
+                        r.font.size = Pt(11)
+
+        for row in sum_table.rows:
+            row.cells[0].width = Cm(5)
+            row.cells[1].width = Cm(12)
+
+        doc.add_paragraph()
 
     # ════════════════════════════════════════════════════════════════════════
     # PART 1 — Extracted fields table

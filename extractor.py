@@ -93,7 +93,33 @@ def extract_fields(transcript: str) -> dict:
         response_format={"type": "json_object"},
     )
     raw = response.choices[0].message.content
-    # strip markdown code fences if present
     raw = raw.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
-    data = json.loads(raw)
-    return data
+    return json.loads(raw)
+
+
+def generate_summary(transcript: str) -> dict:
+    """Generate a short operational summary from the transcript."""
+    prompt = """אתה קצין מבצעים בצוות חילוץ. קרא את התמלול וספק סיכום מבצעי קצר ב-JSON:
+{
+  "case_summary": "תיאור קצר של המקרה (2-3 משפטים)",
+  "last_location": "המיקום האחרון הידוע של הנעדר",
+  "medical_status": "מצב רפואי ידוע / האם יכול ללכת",
+  "time_missing": "כמה זמן עבר מאז נעלם",
+  "physical_description": "תיאור חיצוני קצר (גובה/משקל/ביגוד)"
+}
+החזר JSON בלבד.
+
+תמלול:
+""" + transcript
+    response = _client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0,
+        response_format={"type": "json_object"},
+    )
+    raw = response.choices[0].message.content
+    raw = raw.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
+    try:
+        return json.loads(raw)
+    except Exception:
+        return {}

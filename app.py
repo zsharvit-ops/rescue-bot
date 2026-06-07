@@ -14,6 +14,7 @@ from twilio.rest import Client
 from extractor import extract_fields
 from doc_generator import generate_doc
 from transcriber import transcribe_audio
+from extractor import generate_summary
 import tempfile
 import requests as http_requests
 import threading
@@ -108,8 +109,10 @@ def _process_and_reply(from_number: str, transcript: str):
     try:
         print("[_process_and_reply] extracting fields...", flush=True)
         fields = extract_fields(transcript)
+        print("[_process_and_reply] generating summary...", flush=True)
+        summary = generate_summary(transcript)
         print("[_process_and_reply] generating doc...", flush=True)
-        doc_path = generate_doc(fields, transcript)
+        doc_path = generate_doc(fields, transcript, summary=summary)
 
         os.makedirs("static/output", exist_ok=True)
         import shutil

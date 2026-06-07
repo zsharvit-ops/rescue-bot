@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from extractor import extract_fields
+from extractor import extract_fields, generate_summary
 from doc_generator import generate_doc
 
 def main():
@@ -31,8 +31,15 @@ def main():
         if v:
             print(f"  {k}: {v}")
 
+    print("\n� מייצר סיכום מבצעי...")
+    summary = generate_summary(transcript)
+    print("✅ סיכום:")
+    for k, v in summary.items():
+        if v:
+            print(f"  {k}: {v}")
+
     print("\n📄 מייצר מסמך Word...")
-    path = generate_doc(fields, transcript)
+    path = generate_doc(fields, transcript, summary=summary)
     print(f"✅ המסמך נשמר: {path}")
 
     # Try to open automatically
