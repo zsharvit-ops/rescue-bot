@@ -87,7 +87,7 @@ def extract_fields(transcript: str) -> dict:
     """Extract structured fields from a Hebrew search & rescue transcript."""
     prompt = f"{SYSTEM_PROMPT}\n\nתמלול:\n{transcript}"
     response = _client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+        model="llama-3.1-8b-instant",
         messages=[{"role": "user", "content": prompt}],
         temperature=0,
         response_format={"type": "json_object"},
@@ -112,7 +112,7 @@ def generate_summary(transcript: str) -> dict:
 תמלול:
 """ + transcript
     response = _client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+        model="llama-3.1-8b-instant",
         messages=[{"role": "user", "content": prompt}],
         temperature=0,
         response_format={"type": "json_object"},
@@ -141,7 +141,7 @@ def format_transcript_with_speakers(transcript: str) -> str:
 תמלול:
 """ + transcript
     response = _client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+        model="llama-3.1-8b-instant",
         messages=[{"role": "user", "content": prompt}],
         temperature=0,
     )
