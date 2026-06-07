@@ -24,6 +24,7 @@ def transcribe_audio(media_url: str) -> str:
         media_url,
         auth=(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN),
         timeout=60,
+        proxies={"https": os.environ.get("HTTPS_PROXY"), "http": os.environ.get("HTTP_PROXY")} if os.environ.get("HTTPS_PROXY") else None,
     )
     response.raise_for_status()
 

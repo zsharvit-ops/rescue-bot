@@ -16,6 +16,7 @@ from doc_generator import generate_doc
 from transcriber import transcribe_audio
 import tempfile
 import requests as http_requests
+import threading
 
 app = Flask(__name__)
 
@@ -45,15 +46,11 @@ def webhook():
 
         if "audio" in media_type or "ogg" in media_type or "mpeg" in media_type or "mp4" in media_type:
             msg.body("🎙️ קיבלתי הקלטה! מתמלל... אנא המתן מספר שניות.")
-            # We need to respond immediately and process async,
-            # but for simplicity we process inline (Twilio allows up to 15s response).
-            # For long recordings use a task queue (Celery/RQ).
-            try:
-                transcript = transcribe_audio(media_url)
-                sessions[from_number] = {"buffer": transcript, "collecting": False}
-                _process_transcript_and_reply(from_number, transcript)
-            except Exception as e:
-                msg.body(f"❌ שגיאה בתמלול ההקלטה:\n{e}")
+            threading.Thread(
+                target=_transcribe_and_reply,
+                args=(media_url, from_number),
+                daemon=True,
+            ).start()
         else:
             msg.body("⚠️ קיבלתי קובץ אך הוא אינו אודיו. אנא שלח קובץ הקלטה (.ogg, .mp3, .m4a).")
         return str(resp)
@@ -64,7 +61,12 @@ def webhook():
         sessions[from_number] = {"buffer": transcript, "collecting": True}
 
         if len(transcript) > 50:
-            _process_transcript(from_number, msg)
+            msg.body("⏳ מעבד את התמלול... אשלח לך את המסמך תוך שניות.")
+            threading.Thread(
+                target=_process_and_reply,
+                args=(from_number, transcript),
+                daemon=True,
+            ).start()
         else:
             msg.body(
                 "📋 התחלתי לקבל את התמלול. שלח את שאר הטקסט, "
@@ -75,7 +77,13 @@ def webhook():
     # ── Accumulation mode ────────────────────────────────────────────────
     if from_number in sessions and sessions[from_number].get("collecting"):
         if incoming_msg.lower() in ("סיום", "done", "finish"):
-            _process_transcript(from_number, msg)
+            transcript = sessions.pop(from_number, {}).get("buffer", "")
+            msg.body("⏳ מעבד את התמלול... אשלח לך את המסמך תוך שניות.")
+            threading.Thread(
+                target=_process_and_reply,
+                args=(from_number, transcript),
+                daemon=True,
+            ).start()
         else:
             sessions[from_number]["buffer"] += "\n" + incoming_msg
             msg.body("✅ קיבלתי. המשך לשלוח או שלח *סיום* לסיום.")
@@ -90,6 +98,50 @@ def webhook():
         "לסיום הודעות מרובות שלח: *סיום*"
     )
     return str(resp)
+
+
+def _process_and_reply(from_number: str, transcript: str):
+    """Background thread: extract fields, generate doc, send via Twilio client."""
+    client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+    try:
+        fields = extract_fields(transcript)
+        doc_path = generate_doc(fields, transcript)
+
+        os.makedirs("static/output", exist_ok=True)
+        import shutil
+        file_name = os.path.basename(doc_path)
+        dest = os.path.join("static", "output", file_name)
+        shutil.copy(doc_path, dest)
+
+        host = os.environ.get("PUBLIC_URL", "http://localhost:5000").rstrip("/")
+        doc_url = f"{host}/static/output/{file_name}"
+
+        client.messages.create(
+            from_=TWILIO_WHATSAPP_NUMBER,
+            to=from_number,
+            media_url=[doc_url],
+            body="📄 דוח תחקיר חילוץ מוכן:",
+        )
+    except Exception as e:
+        client.messages.create(
+            from_=TWILIO_WHATSAPP_NUMBER,
+            to=from_number,
+            body=f"❌ שגיאה בעיבוד התמלול:\n{e}",
+        )
+
+
+def _transcribe_and_reply(media_url: str, from_number: str):
+    """Run in background thread: transcribe audio then send doc."""
+    client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+    try:
+        transcript = transcribe_audio(media_url)
+        _process_transcript_and_reply(from_number, transcript)
+    except Exception as e:
+        client.messages.create(
+            from_=TWILIO_WHATSAPP_NUMBER,
+            to=from_number,
+            body=f"❌ שגיאה בתמלול ההקלטה:\n{e}",
+        )
 
 
 def _process_transcript_and_reply(from_number: str, transcript: str):
