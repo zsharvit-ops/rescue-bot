@@ -6,9 +6,9 @@ Downloads the audio file from Twilio's media URL and sends it to Gemini.
 import os
 import tempfile
 import requests
-import google.genai as genai
+from groq import Groq
 
-_client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
+_client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
 TWILIO_ACCOUNT_SID = os.environ.get("TWILIO_ACCOUNT_SID")
 TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN")
@@ -46,17 +46,12 @@ def transcribe_audio(media_url: str) -> str:
         tmp_path = tmp.name
 
     try:
-        audio_file = _client.files.upload(
-            file=tmp_path,
-            config=genai.types.UploadFileConfig(mime_type=mime_type),
-        )
-        result = _client.models.generate_content(
-            model="gemini-2.0-flash",
-            contents=[
-                audio_file,
-                "תמלל את ההקלטה הזו לעברית. החזר רק את הטקסט המתומלל, ללא הסברים.",
-            ],
-        )
-        return result.text.strip()
+        with open(tmp_path, "rb") as audio_file:
+            transcription = _client.audio.transcriptions.create(
+                model="whisper-large-v3",
+                file=audio_file,
+                language="he",
+            )
+        return transcription.text.strip()
     finally:
         os.unlink(tmp_path)

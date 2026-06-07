@@ -5,9 +5,9 @@ Sends the transcript to Google Gemini and asks it to extract structured search &
 
 import os
 import json
-import google.genai as genai
+from groq import Groq
 
-_client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
+_client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
 # Ordered list of fields to extract (Hebrew label, English key)
 FIELDS = [
@@ -86,15 +86,13 @@ SYSTEM_PROMPT = f"""
 def extract_fields(transcript: str) -> dict:
     """Extract structured fields from a Hebrew search & rescue transcript."""
     prompt = f"{SYSTEM_PROMPT}\n\nתמלול:\n{transcript}"
-    response = _client.models.generate_content(
-        model="gemini-2.0-flash",
-        contents=prompt,
-        config=genai.types.GenerateContentConfig(
-            temperature=0,
-            response_mime_type="application/json",
-        ),
+    response = _client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0,
+        response_format={"type": "json_object"},
     )
-    raw = response.text
+    raw = response.choices[0].message.content
     # strip markdown code fences if present
     raw = raw.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
     data = json.loads(raw)
