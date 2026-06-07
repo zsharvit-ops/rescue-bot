@@ -1,0 +1,8 @@
+[phases.setup]
+nixPkgs = ["python313", "fontconfig", "freetype", "harfbuzz", "pango", "gdk-pixbuf", "libffi", "cairo", "font-noto", "font-noto-cjk"]
+
+[phases.install]
+cmds = ["pip install -r requirements.txt", "fc-cache -fv"]
+
+[start]
+cmd = "gunicorn app:app --bind 0.0.0.0:$PORT"

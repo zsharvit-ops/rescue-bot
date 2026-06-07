@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from extractor import extract_fields, generate_summary, format_transcript_with_speakers
-from doc_generator import generate_doc
+from pdf_generator import generate_pdf
 
 def main():
     if len(sys.argv) > 1:
@@ -41,8 +41,8 @@ def main():
     print("\n💬 מעצב תמלול לפי דוברים...")
     formatted_transcript = format_transcript_with_speakers(transcript)
 
-    print("\n📄 מייצר מסמך Word...")
-    doc_path = generate_doc(fields, formatted_transcript, summary=summary)
+    print("\n📄 מייצר HTML...")
+    doc_path = generate_pdf(fields, formatted_transcript, summary=summary)
     print(f"✅ המסמך נשמר: {doc_path}")
 
     # Try to open automatically

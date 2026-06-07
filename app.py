@@ -12,7 +12,7 @@ from flask import Flask, request
 from twilio.twiml.messaging_response import MessagingResponse
 from twilio.rest import Client
 from extractor import extract_fields, generate_summary, format_transcript_with_speakers
-from doc_generator import generate_doc
+from pdf_generator import generate_pdf
 from transcriber import transcribe_audio
 import tempfile
 import requests as http_requests
@@ -112,8 +112,8 @@ def _process_and_reply(from_number: str, transcript: str):
         summary = generate_summary(transcript)
         print("[_process_and_reply] formatting transcript by speakers...", flush=True)
         formatted_transcript = format_transcript_with_speakers(transcript)
-        print("[_process_and_reply] generating doc...", flush=True)
-        doc_path = generate_doc(fields, formatted_transcript, summary=summary)
+        print("[_process_and_reply] generating pdf...", flush=True)
+        doc_path = generate_pdf(fields, formatted_transcript, summary=summary)
 
         os.makedirs("static/output", exist_ok=True)
         import shutil
@@ -128,7 +128,7 @@ def _process_and_reply(from_number: str, transcript: str):
         client.messages.create(
             from_=TWILIO_WHATSAPP_NUMBER,
             to=from_number,
-            body=f"📄 דוח תחקיר חילוץ מוכן!\nלחץ להורדה:\n{doc_url}",
+            body=f"📄 דוח תחקיר חילוץ מוכן!\nלחץ לצפייה/הורדה:\n{doc_url}",
         )
         print("[_process_and_reply] DONE", flush=True)
     except Exception as e:
