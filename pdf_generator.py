@@ -49,8 +49,8 @@ def _build_html(fields: dict, transcript: str, summary: dict = None) -> str:
             if value:
                 summary_rows += f"""
                 <tr>
-                  <td class="sum-val">{_html_escape(value)}</td>
                   <td class="sum-label">{_html_escape(label)}</td>
+                  <td class="sum-val">{_html_escape(value)}</td>
                 </tr>"""
 
     # ── Fields table ─────────────────────────────────────────────────────────
@@ -60,8 +60,8 @@ def _build_html(fields: dict, transcript: str, summary: dict = None) -> str:
         bg = COLORS["row_even"] if i % 2 == 0 else COLORS["row_odd"]
         field_rows += f"""
         <tr style="background:{bg}">
-          <td class="val-cell">{_html_escape(str(value))}</td>
           <td class="label-cell">{_html_escape(heb_label)}</td>
+          <td class="val-cell">{_html_escape(str(value))}</td>
         </tr>"""
 
     # ── Transcript ───────────────────────────────────────────────────────────
@@ -92,10 +92,17 @@ def _build_html(fields: dict, transcript: str, summary: dict = None) -> str:
 
   body {{
     font-family: 'Heebo', 'Arial', 'Noto Sans Hebrew', sans-serif;
-    direction: rtl;
+    direction: rtl !important;
+    unicode-bidi: embed;
     font-size: 11pt;
     color: #222;
     padding: 20mm 15mm;
+  }}
+
+  table, tr, td, th, p, div, span, h1, h2, h3 {{
+    direction: rtl !important;
+    text-align: right !important;
+    unicode-bidi: embed;
   }}
 
   h1.doc-title {{
@@ -200,13 +207,13 @@ def _build_html(fields: dict, transcript: str, summary: dict = None) -> str:
 <p class="doc-date">תאריך הפקה: {now}</p>
 
 {"<h2 class='section-title'>סיכום מצב — מידע קריטי</h2>" if summary_rows else ""}
-{"<table class='summary'>" + summary_rows + "</table>" if summary_rows else ""}
+{"<table class='summary' dir='rtl'>" + summary_rows + "</table>" if summary_rows else ""}
 
 <h2 class="section-title">חלק א׳ — פרטי מחולץ ומקרה</h2>
-<table class="fields">
+<table class="fields" dir="rtl">
   <tr>
-    <th class="fields-header" style="width:65%">ערך</th>
     <th class="fields-header" style="width:35%">שדה</th>
+    <th class="fields-header" style="width:65%">ערך</th>
   </tr>
   {field_rows}
 </table>
@@ -214,7 +221,7 @@ def _build_html(fields: dict, transcript: str, summary: dict = None) -> str:
 <div class="page-break"></div>
 
 <h2 class="section-title">חלק ב׳ — תמלול השיחה המלא</h2>
-<div class="transcript-box">
+<div class="transcript-box" dir="rtl">
   {transcript_html}
 </div>
 
